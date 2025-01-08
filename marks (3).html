@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Data Search</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #searchContainer {
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #searchInput {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            flex-grow: 1;
+            box-sizing: border-box;
+        }
+
+        #searchButton {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #searchButton:hover {
+            background-color: #0069d9;
+        }
+
+        #dataContainer {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .dataRow {
+            display: flex;
+            flex-direction: column; /* Arrange items vertically */
+            gap: 10px;             /* Add spacing between items */
+            margin-bottom: 10px;
+        }
+
+        .dataField {
+            display: flex;          /* Use flexbox for alignment */
+            align-items: center;    /* Vertically align items */
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f9f9f9; /* Light gray background */
+        }
+
+        .dataLabel {
+            font-weight: bold;
+            width: 150px; /* Fixed width for label */
+            margin-right: 10px;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 400px) {
+            #searchContainer {
+                flex-direction: column;
+            }
+
+            #searchInput {
+                margin-bottom: 10px;
+            }
+            .dataField {
+                flex-direction: column; /* Stack label and value vertically on smaller screens */
+                align-items: flex-start; /* Align items to the start */
+            }
+            .dataLabel {
+                width: auto; /* Allow label to wrap on smaller screens */
+                margin-bottom: 5px; /* Add spacing below label */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Student Data Search</h1>
+    <div id="searchContainer">
+        <input type="text" id="searchInput" placeholder="Enter Register Number">
+        <button id="searchButton">Search</button>
+    </div>
+    <div id="dataContainer"></div>
+
+    <script>
+        const excelId = "1cm0gPW_KWunjWdxfu9tjwBrOR1VGw0hwqSbne0Dp6nU"
+        const sheetURL = `https://docs.google.com/spreadsheets/d/${excelId}/export?format=csv&id=${excelId}`;
+        const dataContainer = document.getElementById('dataContainer');
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+
+        fetch(sheetURL)
+            .then(response => response.text())
+            .then(data => {
+                const rows = data.split('\n');
+                const header = rows[0].split(',');
+                const studentData = rows.slice(1).reduce((main_obj, row) => {
+                    const cells = row.split(',');
+                    const obj = {};
+                    header.forEach((h, i) => obj[h.trim()] = cells[i].trim());
+                    return {...main_obj, [obj['Reg no']]: obj};
+                }, ({}));
+
+                searchButton.addEventListener('click', () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const student_data = studentData[searchTerm]
+
+                    dataContainer.innerHTML = '';
+                    if (student_data) {
+                        const rowDiv = document.createElement('div');
+                        rowDiv.classList.add('dataRow');
+                        for (const key in student_data) {
+                            const dataField = document.createElement('div');
+                            dataField.classList.add('dataField');
+                            const label = document.createElement('span');
+                            label.classList.add('dataLabel');
+                            label.textContent = `${key}: `;
+                            const value = document.createElement('span');
+                            value.textContent = student_data[key];
+                            if (key.toLowerCase() === 'result') {
+                                value.style = (student_data[key]?.toLowerCase() == 'pass') ? 'color: green' : 'color: red'
+                            }
+                            dataField.appendChild(label);
+                            dataField.appendChild(value);
+                            rowDiv.appendChild(dataField);
+                        }
+                        dataContainer.appendChild(rowDiv);
+                    } else {
+                        dataContainer.innerHTML = '<p>No student found with that register number.</p>';
+                    }
+                });
+
+                searchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        searchButton.click();
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    </script>
+</body>
+</html>
